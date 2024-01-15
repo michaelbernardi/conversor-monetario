@@ -42,7 +42,6 @@ const state = (() =>{
   }
 })()
 
-
 const getUrl = currency =>`https://v6.exchangerate-api.com/v6/7f58ddd67b16547698958a23/latest/${currency}`
 
 const getErrormessage = errorType =>({
@@ -65,49 +64,54 @@ const fechExchangeRate = async url =>{
     const exchangeRateData = await response.json()
 
     if (exchangeRateData.result === 'error'){
-      throw new Error (getErrormessage (exchangeRateData['error-type']))
+      const errorMenssage = getErrormessage(exchangeRateData ['error-type'])
+      throw new Error (errorMenssage)
     }
 
-    return exchangeRateData
+    return state.setExchangeRate(exchangeRateData)
   } catch (err){
     showAlert(err)
   }
 }
 
-const showInitialInfo = ({conversion_rates}) =>{
-  const getOptions = selectedCurrency => Object.keys(conversion_rates)
-    .map(currency => `<option ${currency === selectedCurrency ? 'selected' : ''}>${currency}</option>`)
+const getOptions = (selectedCurrency, conversion_rates) => {
+  const setSelectAttribute = currency =>
+    currency === selectedCurrency ? 'selected' : ''
+  return Object.keys(conversion_rates)
+    .map(currency => `<option ${setSelectAttribute(currency)}>${currency}</option>`)
     .join('')
+  }
 
-    currencyOneEl.innerHTML = getOptions('USD')
-    currencyTwoEl.innerHTML = getOptions('BRL')
-    convertedValueEl.textContent = conversion_rates.BRL.toFixed(2)
-    valuePrecisionEl.textContent = `1 ${currencyOneEl.value} = ${conversion_rates.BRL} BRL`
+    const getMultipliedExchangeRate = conversion_rates =>{
+      const currencyTwo = conversion_rates[currencyTwoEl.value]
+      return (timesCurrencyOneEl.value * currencyTwo).toFixed(2)
+    }
+    
+    const getNotRoundedExchangeRate = conversion_rates => {
+      const currencyTwo = conversion_rates[currencyTwoEl.value]
+      return `1 ${currencyOneEl.value} = ${1 * currencyTwo} ${currencyTwoEl.value}`
+    }
+    
+    const showUpdateRates = ({conversion_rates })=>{
+      convertedValueEl.textContent = getMultipliedExchangeRate(conversion_rates)
+      valuePrecisionEl.textContent = getNotRoundedExchangeRate(conversion_rates)
+    }
+    
+
+const showInitialInfo = ({conversion_rates}) =>{
+    currencyOneEl.innerHTML = getOptions('USD', conversion_rates)
+    currencyTwoEl.innerHTML = getOptions('BRL', conversion_rates)
+
+   showUpdateRates({ conversion_rates })
 }
 
 const init = async () =>{
   const url = getUrl('USD')
-  const exchangeRateFromAPI = await fechExchangeRate(url)
-  const exchangeRate = state.setExchangeRate(exchangeRateFromAPI)
+  const exchangeRate = await fechExchangeRate(url)
 
   if(exchangeRate && exchangeRate.conversion_rates){
     showInitialInfo(exchangeRate)
   }
-}
-
-const getMultipliedExchangeRate = conversion_rates =>{
-  const currencyTwo = conversion_rates[currencyTwoEl.value]
-  return (timesCurrencyOneEl.value * currencyTwo).toFixed(2)
-}
-
-const getNotRoundedExchangeRate = conversion_rates => {
-  const currencyTwo = conversion_rates[currencyTwoEl.value]
-  return `1 ${currencyOneEl.value} = ${1 * currencyTwo} ${currencyTwoEl.value}`
-}
-
-const showUpdateRates = ({conversion_rates })=>{
-  convertedValueEl.textContent = getMultipliedExchangeRate(conversion_rates)
-  valuePrecisionEl.textContent = getNotRoundedExchangeRate(conversion_rates)
 }
 
 timesCurrencyOneEl.addEventListener('input', () =>{
@@ -122,8 +126,8 @@ currencyTwoEl.addEventListener('input', () =>{
 
 currencyOneEl.addEventListener('input', async e =>{
   const url = getUrl(e.target.value)
-  const newExchangeRate = await fechExchangeRate(url)
-  const exchangeRate = state.setExchangeRate(newExchangeRate)
+  const exchangeRate = await fechExchangeRate(url)
+
   showUpdateRates(exchangeRate)
   })
 
