@@ -20,9 +20,8 @@ const showAlert = err =>{
   button.setAttribute('type', 'button')
   button.setAttribute('aria-label', 'close')
 
-  button.addEventListener('click', () =>{
-    div.remove()
-  })
+  const removeAlert = () => div.remove()
+  button.addEventListener('click', removeAlert)
 
   div.appendChild(button)
   currenciesEL.insertAdjacentElement('afterend', div)
@@ -42,7 +41,8 @@ const state = (() =>{
   }
 })()
 
-const getUrl = currency =>`https://v6.exchangerate-api.com/v6/7f58ddd67b16547698958a23/latest/${currency}`
+const APIKey = '7f58ddd67b16547698958a23'
+const getUrl = currency =>`https://v6.exchangerate-api.com/v6/${APIKey}/latest/${currency}`
 
 const getErrormessage = errorType =>({
   'unsupported-code': 'A modeda não existe em nosso banco de dados.',
@@ -77,8 +77,9 @@ const fechExchangeRate = async url =>{
 const getOptions = (selectedCurrency, conversion_rates) => {
   const setSelectAttribute = currency =>
     currency === selectedCurrency ? 'selected' : ''
+  const getOptionsAsArray = currency => `<option ${setSelectAttribute(currency)}>${currency}</option>` 
   return Object.keys(conversion_rates)
-    .map(currency => `<option ${setSelectAttribute(currency)}>${currency}</option>`)
+    .map(getOptionsAsArray)
     .join('')
   }
 
@@ -93,6 +94,7 @@ const getOptions = (selectedCurrency, conversion_rates) => {
     }
     
     const showUpdateRates = ({conversion_rates })=>{
+    
       convertedValueEl.textContent = getMultipliedExchangeRate(conversion_rates)
       valuePrecisionEl.textContent = getNotRoundedExchangeRate(conversion_rates)
     }
@@ -102,7 +104,7 @@ const showInitialInfo = ({conversion_rates}) =>{
     currencyOneEl.innerHTML = getOptions('USD', conversion_rates)
     currencyTwoEl.innerHTML = getOptions('BRL', conversion_rates)
 
-   showUpdateRates({ conversion_rates })
+    showUpdateRates({ conversion_rates })
 }
 
 const init = async () =>{
@@ -114,22 +116,26 @@ const init = async () =>{
   }
 }
 
-timesCurrencyOneEl.addEventListener('input', () =>{
+const handleTimesCurrencyOneElInput = () =>{
   const {conversion_rates} = state.getExchangeRate()
   convertedValueEl.textContent = getMultipliedExchangeRate(conversion_rates)
-})
+}
 
-currencyTwoEl.addEventListener('input', () =>{
+const handleCurrencyTwoElInput = () =>{
   const exchangeRate = state.getExchangeRate()
   showUpdateRates(exchangeRate)
-})
+}
 
-currencyOneEl.addEventListener('input', async e =>{
+const handleCurrencyOneElInput = async e =>{
   const url = getUrl(e.target.value)
   const exchangeRate = await fechExchangeRate(url)
 
   showUpdateRates(exchangeRate)
-  })
+  }
+
+timesCurrencyOneEl.addEventListener('input',handleTimesCurrencyOneElInput )
+currencyTwoEl.addEventListener('input', handleCurrencyTwoElInput)
+currencyOneEl.addEventListener('input', handleCurrencyOneElInput)
 
 
 init()
